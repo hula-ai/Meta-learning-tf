@@ -10,7 +10,7 @@ except KeyError as e:
           file=sys.stderr)
 
 from tensorflow.python.platform import flags
-from utils import mse, xent, conv_block, normalize
+from MAML_tensorflow.utils import mse, xent, conv_block, normalize
 
 FLAGS = flags.FLAGS
 

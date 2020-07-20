@@ -76,7 +76,7 @@ def compute_accuracy(args, y, output):
             total[class_count[y_i[j]]] += 1
             if y_i[j] == output_i[j]:
                 correct[class_count[y_i[j]]] += 1
-    return [float(correct[i]) / total[i] if total[i] > 0. else 0. for i in range(1, (args.seq_length/args.n_classes)+1)]
+    return [float(correct[i]) / total[i] if total[i] > 0. else 0. for i in range(1, (args.seq_length//args.n_classes)+1)]
 
 
 def display_and_save(args, all_acc, acc, all_loss, loss, episode, mode='train'):
@@ -95,11 +95,11 @@ def display_and_save(args, all_acc, acc, all_loss, loss, episode, mode='train'):
     if mode == 'test':
         print('**************************************** Test Result ****************************************')
     for accu in acc:
-        print '{:.02%}\t'.format(accu),
-    print '{0}\t{1:0.03}'.format(episode, loss)
+        print('{:.02%}\t'.format(accu), end=' ')
+    print('{0}\t{1:0.03}'.format(episode, loss))
     if args.save_hdf5:
         # save results in HDF5 file
-        all_acc = np.concatenate((all_acc, np.array(acc).reshape([-1, args.seq_length/args.n_classes])))
+        all_acc = np.concatenate((all_acc, np.array(acc).reshape([-1, args.seq_length//args.n_classes])))
         all_loss = np.append(all_loss, loss)
         h5f = h5py.File(args.save_dir + '/' + args.model + '_' + args.label_type + '/' + mode + '_results.h5', 'w')
         h5f.create_dataset('all_acc', data=all_acc)
@@ -118,10 +118,10 @@ def load_results(args, last_episode, mode='train'):
     """
     h5f = h5py.File(args.save_dir + '/' + args.model + '_' + args.label_type + '/' + mode + '_results.h5', 'r')
     if mode == 'train':
-        all_acc = h5f['all_acc'][:last_episode / args.disp_freq]
-        all_loss = h5f['all_loss'][:last_episode / args.disp_freq]
+        all_acc = h5f['all_acc'][:last_episode // args.disp_freq]
+        all_loss = h5f['all_loss'][:last_episode // args.disp_freq]
     elif mode == 'test':
-        all_acc = h5f['all_acc'][:last_episode / args.test_freq]
-        all_loss = h5f['all_loss'][:last_episode / args.test_freq]
+        all_acc = h5f['all_acc'][:last_episode // args.test_freq]
+        all_loss = h5f['all_loss'][:last_episode // args.test_freq]
     h5f.close()
     return all_acc, all_loss

@@ -1,2 +1,3 @@
-MAML_tensorflow/data
+data
 MAML_tensorflow/log
+.idea/

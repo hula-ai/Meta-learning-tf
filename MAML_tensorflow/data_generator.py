@@ -5,7 +5,7 @@ import random
 import tensorflow as tf
 
 from tensorflow.python.platform import flags
-from utils import get_images
+from MAML_tensorflow.utils import get_images
 
 FLAGS = flags.FLAGS
 
@@ -37,7 +37,7 @@ class DataGenerator(object):
             self.dim_input = np.prod(self.img_size)
             self.dim_output = self.num_classes
             # data that is pre-resized using PIL with lanczos filter
-            data_folder = config.get('data_folder', './data/omniglot_resized')
+            data_folder = config.get('data_folder', '../data/omniglot_resized')
 
             character_folders = [os.path.join(data_folder, family, character) \
                 for family in os.listdir(data_folder) \
@@ -58,11 +58,11 @@ class DataGenerator(object):
             self.img_size = config.get('img_size', (84, 84))
             self.dim_input = np.prod(self.img_size)*3
             self.dim_output = self.num_classes
-            metatrain_folder = config.get('metatrain_folder', './data/miniImagenet/train')
+            metatrain_folder = config.get('metatrain_folder', '../data/miniImagenet/train')
             if FLAGS.test_set:
-                metaval_folder = config.get('metaval_folder', './data/miniImagenet/test')
+                metaval_folder = config.get('metaval_folder', '../data/miniImagenet/test')
             else:
-                metaval_folder = config.get('metaval_folder', './data/miniImagenet/val')
+                metaval_folder = config.get('metaval_folder', '../data/miniImagenet/val')
 
             metatrain_folders = [os.path.join(metatrain_folder, label) \
                 for label in os.listdir(metatrain_folder) \

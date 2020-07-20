@@ -1,9 +1,9 @@
-from DataLoader import OmniglotDataLoader
-from utils import compute_accuracy, display_and_save, load_results
-from config import args
+from NTM_tensorflow.DataLoader import OmniglotDataLoader
+from NTM_tensorflow.utils import compute_accuracy, display_and_save, load_results
+from NTM_tensorflow.config import args
 import tensorflow as tf
 import numpy as np
-from model import NTMOneShotLearningModel
+from NTM_tensorflow.model import NTMOneShotLearningModel
 import os
 
 
@@ -35,7 +35,7 @@ def train(args):
         else:
             saver = tf.train.Saver(tf.global_variables())
             tf.global_variables_initializer().run()
-            all_acc_train = all_acc_test = np.zeros((0, args.seq_length / args.n_classes))
+            all_acc_train = all_acc_test = np.zeros((0, args.seq_length // args.n_classes))
             all_loss_train = all_loss_test = np.array([])
 
         train_writer = tf.summary.FileWriter(args.tensorboard_dir + args.model + '_' + args.label_type +
@@ -105,8 +105,8 @@ def test(args):
             loss_list.append(learning_loss)
         accuracy = compute_accuracy(args, np.concatenate(y_list, axis=0), np.concatenate(output_list, axis=0))
         for accu in accuracy:
-            print('%.4f' % accu)
-        print(np.mean(loss_list))
+            print(('%.4f' % accu))
+        print((np.mean(loss_list)))
 
 
 if __name__ == '__main__':

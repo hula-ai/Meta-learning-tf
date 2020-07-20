@@ -30,12 +30,14 @@ import numpy as np
 import pickle
 import random
 import tensorflow as tf
+import os
 
-from data_generator import DataGenerator
-from maml import MAML
+from MAML_tensorflow.data_generator import DataGenerator
+from MAML_tensorflow.maml import MAML
 from tensorflow.python.platform import flags
 
 FLAGS = flags.FLAGS
+flags.DEFINE_string('gpu', '1', 'which gpu to use')
 
 ## Dataset/method options
 flags.DEFINE_string('datasource', 'sinusoid', 'sinusoid or omniglot or miniimagenet')
@@ -68,6 +70,8 @@ flags.DEFINE_integer('test_iter', -1, 'iteration to load model (-1 for latest mo
 flags.DEFINE_bool('test_set', False, 'Set to true to test on the the test set, False for the validation set.')
 flags.DEFINE_integer('train_update_batch_size', -1, 'number of examples used for gradient update during training (use if you want to test with a different number).')
 flags.DEFINE_float('train_update_lr', -1, 'value of inner gradient step step during training. (use if you want to test with a different value)') # 0.1 for omniglot
+
+os.environ['CUDA_VISIBLE_DEVICES'] = FLAGS.gpu
 
 def train(model, saver, sess, exp_string, data_generator, resume_itr=0):
     SUMMARY_INTERVAL = 100
