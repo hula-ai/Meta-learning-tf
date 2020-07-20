@@ -1,3 +1,5 @@
 data
 MAML_tensorflow/log
 .idea/
+NTM_tensorflow/saved_model/
+NTM_tensorflow/summary/

@@ -79,10 +79,11 @@ def compute_accuracy(args, y, output):
     return [float(correct[i]) / total[i] if total[i] > 0. else 0. for i in range(1, (args.seq_length//args.n_classes)+1)]
 
 
-def display_and_save(args, all_acc, acc, all_loss, loss, episode, mode='train'):
+def display_and_save(args, save_folder, all_acc, acc, all_loss, loss, episode, mode='train'):
     """
     Display and save results in HDF5 file
     :param args: arguments
+    :param save_folder: save_folder
     :param all_acc: all accuracy values so far  [(episode/disp_freq)-1, seq_length/n_classes]
     :param acc: accuracies of the current episode  [seq_length/n_classes]
     :param all_loss: all loss values so far  [(episode/disp_freq)-1]
@@ -101,22 +102,23 @@ def display_and_save(args, all_acc, acc, all_loss, loss, episode, mode='train'):
         # save results in HDF5 file
         all_acc = np.concatenate((all_acc, np.array(acc).reshape([-1, args.seq_length//args.n_classes])))
         all_loss = np.append(all_loss, loss)
-        h5f = h5py.File(args.save_dir + '/' + args.model + '_' + args.label_type + '/' + mode + '_results.h5', 'w')
+        h5f = h5py.File(save_folder + '/' + mode + '_results.h5', 'w')
         h5f.create_dataset('all_acc', data=all_acc)
         h5f.create_dataset('all_loss', data=all_loss)
         h5f.close()
     return all_acc, all_loss
 
 
-def load_results(args, last_episode, mode='train'):
+def load_results(args, save_folder, last_episode, mode='train'):
     """
     loads the accuracy and loss results so far while loading a model to continue training
     :param args: arguments
+    :param save_folder: save_folder
     :param last_episode: Last train/test episode
     :param mode: train or test
     :return: all accuracy and loss values so far
     """
-    h5f = h5py.File(args.save_dir + '/' + args.model + '_' + args.label_type + '/' + mode + '_results.h5', 'r')
+    h5f = h5py.File(save_folder + '/' + mode + '_results.h5', 'r')
     if mode == 'train':
         all_acc = h5f['all_acc'][:last_episode // args.disp_freq]
         all_loss = h5f['all_loss'][:last_episode // args.disp_freq]
