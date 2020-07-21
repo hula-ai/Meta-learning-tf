@@ -47,13 +47,15 @@ def baseN(num, b):
     return ((num == 0) and "0") or (baseN(num // b, b).lstrip("0") + "0123456789abcdefghijklmnopqrstuvwxyz"[num % b])
 
 
-def compute_accuracy(args, y, output):
+def compute_accuracy(args, y, output, mode="freq_instance"):
     """
     Computes the accuracy list for all instances
     :param args: arguments
     :param y: true labels (i.e. ground truth)  [batch_size, seq_length]
     :param output: predicted labels  [batch_size, seq_length]
+    :param mode: last_instance or freq_instance
     :return: list of accuracy values for instances  [seq_length/n_classes]
+             or a list of accuracy values for the last instances  [batch_size]
     """
     correct = [0] * args.seq_length
     total = [0] * args.seq_length
@@ -63,20 +65,29 @@ def compute_accuracy(args, y, output):
     elif args.label_type == 'five_hot':
         y_decode = five_hot_decode(y)
         output_decode = five_hot_decode(output)
-    for i in range(np.shape(y)[0]):
-        y_i = y_decode[i]
-        output_i = output_decode[i]
-        # print(y_i)
-        # print(output_i)
-        class_count = {}
-        for j in range(args.seq_length):
-            if y_i[j] not in class_count:
-                class_count[y_i[j]] = 0
-            class_count[y_i[j]] += 1
-            total[class_count[y_i[j]]] += 1
-            if y_i[j] == output_i[j]:
-                correct[class_count[y_i[j]]] += 1
-    return [float(correct[i]) / total[i] if total[i] > 0. else 0. for i in range(1, (args.seq_length//args.n_classes)+1)]
+    accs = []
+    if mode == "freq_instance":
+        for i in range(np.shape(y)[0]):
+            y_i = y_decode[i]
+            output_i = output_decode[i]
+            # print(y_i)
+            # print(output_i)
+            class_count = {}
+            for j in range(args.seq_length):
+                if y_i[j] not in class_count:
+                    class_count[y_i[j]] = 0
+                class_count[y_i[j]] += 1
+                total[class_count[y_i[j]]] += 1
+                if y_i[j] == output_i[j]:
+                    correct[class_count[y_i[j]]] += 1
+        accs = [float(correct[i]) / total[i] if total[i] > 0. else 0. for i in range(1, (args.seq_length//args.n_classes)+1)]
+    elif mode == "last_instance":
+        num_classes = args.n_classes
+        for i in range(np.shape(y)[0]):
+            y_i = y_decode[i]
+            output_i = output_decode[i]
+            accs.append(np.sum(y_i[-num_classes:] == output_i[-num_classes:]) / num_classes)
+    return accs
 
 
 def display_and_save(args, save_folder, all_acc, acc, all_loss, loss, episode, mode='train'):

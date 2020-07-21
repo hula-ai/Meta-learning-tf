@@ -8,6 +8,7 @@ import os
 
 
 def main():
+    # folder_str = "one_hot"
     folder_str = "5way2shot"
     # folder_str = args.label_type
     save_folder = args.save_dir + '/' + args.model + '_' + folder_str
@@ -109,10 +110,17 @@ def test(args, save_folder):
             y_list.append(y)
             output_list.append(output)
             loss_list.append(learning_loss)
-        accuracy = compute_accuracy(args, np.concatenate(y_list, axis=0), np.concatenate(output_list, axis=0))
-        for accu in accuracy:
-            print(('%.4f' % accu))
-        print((np.mean(loss_list)))
+        acc_mode = "last_instance"
+        accuracy = compute_accuracy(args, np.concatenate(y_list, axis=0), np.concatenate(output_list, axis=0),
+                                    mode=acc_mode)
+        np.savez_compressed(save_folder + "/test_results.npz", accs=accuracy)  # shape [batch_size]
+        # for accu in accuracy:
+        #     print(('%.4f' % accu))
+        if acc_mode == "last_instance":
+            print("mean accuracy: ", np.mean(accuracy))
+        else:
+            print("instance accuracy: ", accuracy)
+        print("mean loss: ", np.mean(loss_list))
 
 
 if __name__ == '__main__':

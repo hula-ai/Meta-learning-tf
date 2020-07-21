@@ -34,7 +34,15 @@ class OmniglotDataLoader:
             seq = np.array([np.concatenate([[j] * int(seq_length / n_classes) for j in range(n_classes)])
                             for _ in range(batch_size)])
             for i in range(batch_size):
-                np.random.shuffle(seq[i, :])
+                if mode == "test":
+                    seq_i = seq[i, :]
+                    seq_length = len(seq_i)
+                    qry_ids = np.arange(n_classes) * int(seq_length / n_classes)
+                    spt_ids = np.delete(np.arange(seq_length), qry_ids)
+                    seq[i, :] = np.concatenate(
+                        [np.random.permutation(seq_i[spt_ids]), np.random.permutation(seq_i[qry_ids])])
+                else:
+                    np.random.shuffle(seq[i, :])
 
         sample_ids = np.zeros_like(seq)
         for i in range(batch_size):

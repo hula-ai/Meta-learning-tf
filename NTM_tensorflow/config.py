@@ -1,7 +1,7 @@
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--mode', default="train", help='train or test')
+parser.add_argument('--mode', default="test", help='train or test')
 parser.add_argument('--restore_training', default=False, help='restores the last trained model to resume training')
 parser.add_argument('--label_type', default="one_hot", help='one_hot or five_hot')
 parser.add_argument('--n_classes', default=5, help='number of classes to be selected (randomly) in each episode')
@@ -23,7 +23,7 @@ parser.add_argument('--memory_size', default=128, help='number of memory slots')
 parser.add_argument('--memory_vector_dim', default=40, help='size of each memory slot')
 parser.add_argument('--shift_range', default=1, help='only for model=NTM')
 parser.add_argument('--write_head_num', default=1, help='only for model=NTM. For MANN #(write_head) = #(read_head)')
-parser.add_argument('--test_batch_num', default=100, help='number of batches in test mode')
+parser.add_argument('--test_batch_num', default=10, help='number of batches in test mode')
 parser.add_argument('--n_train_classes', default=1100)
 parser.add_argument('--n_test_classes', default=423)
 parser.add_argument('--data_dir', default='../data/omniglot_resized', help='data directory')
