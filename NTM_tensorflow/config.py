@@ -33,4 +33,6 @@ parser.add_argument('--save_hdf5', default=True, help='to save the train/test re
 parser.add_argument('--disp_freq', default=100, help='display and save the train/test after this many episodes')
 parser.add_argument('--test_freq', default=1000, help='run and display the test results after this many episodes')
 parser.add_argument('--tensorboard_dir', default='./summary/')
+parser.add_argument('--noise_strategy', default='random', help='random, or uniform')
+parser.add_argument('--noise_size', default=0.5, help='portion of support samples to be noisy')
 args = parser.parse_args()

@@ -21,6 +21,33 @@ class OmniglotDataLoader:
         self.train_data = self.data[:args.n_train_classes]
         self.test_data = self.data[-args.n_test_classes:]
 
+    def noisify_labels(self, labels, n_classes, noise_size=0.3, noise_strategy="random"):
+        labels = np.array(labels)
+        update_sample_size = int(len(labels) / n_classes) - 1
+        assert update_sample_size * (1 - noise_size) >= 1, \
+            "More than 1 sample per class remains unpolluted is required."
+        total_update_samples = update_sample_size * n_classes
+        num_noise_samples = int(total_update_samples * noise_size)
+        num_clean_samples = total_update_samples - num_noise_samples
+        clean_ids = np.arange(n_classes) * update_sample_size + np.random.randint(0, update_sample_size, n_classes)
+        exclude = np.delete(np.arange(total_update_samples), clean_ids)
+        more_ids = np.random.choice(exclude, num_clean_samples - n_classes, replace=False)
+        clean_ids = np.concatenate([clean_ids, more_ids])
+        noise_ids = np.delete(np.arange(total_update_samples), clean_ids)
+        map_noise_ids = noise_ids // update_sample_size + noise_ids
+        noise_samples = labels[map_noise_ids]
+        if noise_strategy == "random":
+            noise = np.random.randint(0, n_classes, len(map_noise_ids))
+            while np.any(noise_samples == noise):
+                noise = np.random.randint(0, n_classes, len(map_noise_ids))
+            labels[map_noise_ids] = noise
+        elif noise_strategy == "uniform":
+            noise = np.random.permutation(noise_samples)
+            while np.any(noise_samples == noise):
+                noise = np.random.permutation(noise_samples)
+            labels[map_noise_ids] = noise
+        return labels
+
     def fetch_batch(self, args, mode='train', sample_strategy='random', augment=True):
         n_classes, batch_size, seq_length = args.n_classes, args.batch_size, args.seq_length
         if mode == 'train':
@@ -33,14 +60,23 @@ class OmniglotDataLoader:
         elif sample_strategy == 'uniform':  # #(sample) per class are equal
             seq = np.array([np.concatenate([[j] * int(seq_length / n_classes) for j in range(n_classes)])
                             for _ in range(batch_size)])
+            if mode == "test" and args.noise_size != 0:
+                noise_seq = np.zeros_like(seq)
+                for i in range(batch_size):
+                    noise_seq[i] = self.noisify_labels(seq[i], n_classes, noise_size=args.noise_size,
+                                                       noise_strategy=args.noise_strategy)
             for i in range(batch_size):
                 if mode == "test":
                     seq_i = seq[i, :]
+                    noise_seq_i = noise_seq[i, :]
                     seq_length = len(seq_i)
-                    qry_ids = np.arange(n_classes) * int(seq_length / n_classes)
+                    qry_ids = np.arange(1, n_classes+1) * int(seq_length / n_classes) - 1
                     spt_ids = np.delete(np.arange(seq_length), qry_ids)
-                    seq[i, :] = np.concatenate(
-                        [np.random.permutation(seq_i[spt_ids]), np.random.permutation(seq_i[qry_ids])])
+                    qry_perm = np.random.permutation(np.arange(len(qry_ids)))
+                    spt_perm = np.random.permutation(np.arange(len(spt_ids)))
+                    seq[i, :] = np.concatenate([seq_i[spt_ids][spt_perm], seq_i[qry_ids][qry_perm]])
+                    noise_seq[i, :] = np.concatenate([noise_seq_i[spt_ids][spt_perm], noise_seq_i[qry_ids][qry_perm]])
+
                 else:
                     np.random.shuffle(seq[i, :])
 
@@ -56,6 +92,8 @@ class OmniglotDataLoader:
                                  only_resize=not augment)
                     for j in seq[i, :]]
                    for i in range(batch_size)]
+        if mode == "test" and args.noise_size != 0:
+            seq = noise_seq
         if args.label_type == 'one_hot':
             seq_encoded = one_hot_encode(seq, n_classes)
             seq_encoded_shifted = np.concatenate(

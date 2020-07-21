@@ -10,6 +10,8 @@ import os
 def main():
     # folder_str = "one_hot"
     folder_str = "5way2shot"
+    if args.noise_size != 0:
+        folder_str += "_{:s}{:.2f}".format(args.noise_strategy, args.noise_size)
     # folder_str = args.label_type
     save_folder = args.save_dir + '/' + args.model + '_' + folder_str
     summary_folder = args.tensorboard_dir + args.model + '_' + folder_str
@@ -96,6 +98,7 @@ def test(args, save_folder):
     ckpt = tf.train.get_checkpoint_state(save_folder)
     with tf.Session() as sess:
         saver.restore(sess, ckpt.model_checkpoint_path)
+        print("Restoring model weights from " + ckpt.model_checkpoint_path)
         print("Test Result\n1st\t2nd\t3rd\t4th\t5th\t6th\t7th\t8th\t9th\t10th\tloss")
         y_list = []
         output_list = []
