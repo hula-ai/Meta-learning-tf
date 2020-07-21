@@ -37,13 +37,15 @@ from MAML_tensorflow.maml import MAML
 from tensorflow.python.platform import flags
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string('gpu', '1', 'which gpu to use')
+flags.DEFINE_string('gpu', '1, 2, 3, 4', 'which gpu to use')
 
 ## Dataset/method options
 flags.DEFINE_string('datasource', 'sinusoid', 'sinusoid or omniglot or miniimagenet')
 flags.DEFINE_integer('num_classes', 5, 'number of classes used in classification (e.g. 5-way classification).')
 # oracle means task id is input (only suitable for sinusoid)
 flags.DEFINE_string('baseline', None, 'oracle, or None')
+flags.DEFINE_string('noise_strategy', 'uniform', 'random, or uniform')
+flags.DEFINE_float('noise_size', 0.0, 'portion of support samples to be noisy')
 
 ## Training options
 flags.DEFINE_integer('pretrain_iterations', 0, 'number of pre-training iterations.')
@@ -164,7 +166,7 @@ def train(model, saver, sess, exp_string, data_generator, resume_itr=0):
     saver.save(sess, FLAGS.logdir + '/' + exp_string +  '/model' + str(itr))
 
 # calculated for omniglot
-NUM_TEST_POINTS = 600
+NUM_TEST_POINTS = 160
 
 def test(model, saver, sess, exp_string, data_generator, test_num_updates=None):
     num_classes = data_generator.num_classes # for classification, 1 otherwise
@@ -200,6 +202,7 @@ def test(model, saver, sess, exp_string, data_generator, test_num_updates=None):
         metaval_accuracies.append(result)
 
     metaval_accuracies = np.array(metaval_accuracies)
+    np.savez_compressed(FLAGS.logdir +'/'+ exp_string + "/test_results.npz", accs=metaval_accuracies)  # shape [batch_size, num_updates+1]
     means = np.mean(metaval_accuracies, 0)
     stds = np.std(metaval_accuracies, 0)
     ci95 = 1.96*stds/np.sqrt(NUM_TEST_POINTS)
@@ -326,6 +329,8 @@ def main():
         exp_string += 'nonorm'
     else:
         print('Norm setting not recognized.')
+    if FLAGS.noise_size != 0:
+        exp_string += "_{:s}{:.2f}".format(FLAGS.noise_strategy, FLAGS.noise_size)
 
     resume_itr = 0
     model_file = None

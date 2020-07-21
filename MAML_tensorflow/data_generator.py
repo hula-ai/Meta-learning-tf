@@ -78,6 +78,33 @@ class DataGenerator(object):
         else:
             raise ValueError('Unrecognized data source')
 
+    def noisify_labels(self, labels, noise_size=0.3, noise_strategy="random"):
+        labels = np.array(labels)
+        update_sample_size = FLAGS.update_batch_size
+        assert update_sample_size * (1 - noise_size) >= 1, \
+            "More than 1 sample per class remains unpolluted is required."
+        total_update_samples = update_sample_size * self.num_classes
+        num_noise_samples = int(total_update_samples * noise_size)
+        num_clean_samples = total_update_samples - num_noise_samples
+        clean_ids = np.arange(self.num_classes) * update_sample_size + np.random.randint(0, update_sample_size,
+                                                                                          self.num_classes)
+        exclude = np.delete(np.arange(total_update_samples), clean_ids)
+        more_ids = np.random.choice(exclude, num_clean_samples - self.num_classes, replace=False)
+        clean_ids = np.concatenate([clean_ids, more_ids])
+        noise_ids = np.delete(np.arange(total_update_samples), clean_ids)
+        map_noise_ids = noise_ids // update_sample_size * update_sample_size + noise_ids
+        noise_samples = labels[map_noise_ids]
+        if noise_strategy == "random":
+            noise = np.random.randint(0, self.num_classes, len(map_noise_ids))
+            while np.any(noise_samples == noise):
+                noise = np.random.randint(0, self.num_classes, len(map_noise_ids))
+            labels[map_noise_ids] = noise
+        elif noise_strategy == "uniform":
+            noise = np.random.permutation(noise_samples)
+            while np.any(noise_samples == noise):
+                noise = np.random.permutation(noise_samples)
+            labels[map_noise_ids] = noise
+        return labels.tolist()
 
     def make_data_tensor(self, train=True):
         if train:
@@ -136,7 +163,12 @@ class DataGenerator(object):
                 # omniglot augments the dataset by rotating digits to create new classes
                 # get rotation per class (e.g. 0,1,2,0,0 if there are 5 classes)
                 rotations = tf.multinomial(tf.log([[1., 1.,1.,1.]]), self.num_classes)
-            label_batch = tf.convert_to_tensor(labels)
+            if not FLAGS.train and FLAGS.noise_size != 0:
+                noise_labels = self.noisify_labels(labels, noise_size=FLAGS.noise_size,
+                                                   noise_strategy=FLAGS.noise_strategy)
+                label_batch = tf.convert_to_tensor(noise_labels)
+            else:
+                label_batch = tf.convert_to_tensor(labels)
             new_list, new_label_list = [], []
             for k in range(self.num_samples_per_class):
                 class_idxs = tf.range(0, self.num_classes)
