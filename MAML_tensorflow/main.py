@@ -46,6 +46,7 @@ flags.DEFINE_integer('num_classes', 5, 'number of classes used in classification
 flags.DEFINE_string('baseline', None, 'oracle, or None')
 flags.DEFINE_string('noise_strategy', 'uniform', 'random, or uniform')
 flags.DEFINE_float('noise_size', 0.0, 'portion of support samples to be noisy')
+flags.DEFINE_float('reduce_spt_size', 0.3, 'portion of reduced size of the support set')
 
 ## Training options
 flags.DEFINE_integer('pretrain_iterations', 0, 'number of pre-training iterations.')
@@ -282,10 +283,20 @@ def main():
 
         random.seed(6)
         image_tensor, label_tensor = data_generator.make_data_tensor(train=False)
-        inputa = tf.slice(image_tensor, [0,0,0], [-1,num_classes*FLAGS.update_batch_size, -1])
-        inputb = tf.slice(image_tensor, [0,num_classes*FLAGS.update_batch_size, 0], [-1,-1,-1])
-        labela = tf.slice(label_tensor, [0,0,0], [-1,num_classes*FLAGS.update_batch_size, -1])
-        labelb = tf.slice(label_tensor, [0,num_classes*FLAGS.update_batch_size, 0], [-1,-1,-1])
+        if FLAGS.reduce_spt_size != 0:
+            assert FLAGS.update_batch_size * (1 - FLAGS.reduce_spt_size) >= 1, \
+                "More than 1 sample per class remains is required."
+            inputa = tf.slice(image_tensor, [0, 0, 0],
+                              [-1, int(num_classes * FLAGS.update_batch_size * (1 - FLAGS.reduce_spt_size)), -1])
+            inputb = tf.slice(image_tensor, [0, num_classes * FLAGS.update_batch_size, 0], [-1, -1, -1])
+            labela = tf.slice(label_tensor, [0, 0, 0],
+                              [-1, int(num_classes * FLAGS.update_batch_size * (1 - FLAGS.reduce_spt_size)), -1])
+            labelb = tf.slice(label_tensor, [0, num_classes * FLAGS.update_batch_size, 0], [-1, -1, -1])
+        else:
+            inputa = tf.slice(image_tensor, [0,0,0], [-1,num_classes*FLAGS.update_batch_size, -1])
+            inputb = tf.slice(image_tensor, [0,num_classes*FLAGS.update_batch_size, 0], [-1,-1,-1])
+            labela = tf.slice(label_tensor, [0,0,0], [-1,num_classes*FLAGS.update_batch_size, -1])
+            labelb = tf.slice(label_tensor, [0,num_classes*FLAGS.update_batch_size, 0], [-1,-1,-1])
         metaval_input_tensors = {'inputa': inputa, 'inputb': inputb, 'labela': labela, 'labelb': labelb}
     else:
         tf_data_load = False
@@ -331,6 +342,8 @@ def main():
         print('Norm setting not recognized.')
     if FLAGS.noise_size != 0:
         exp_string += "_{:s}{:.2f}".format(FLAGS.noise_strategy, FLAGS.noise_size)
+    if FLAGS.reduce_spt_size != 0:
+        exp_string += "_reduce{:.2f}".format(FLAGS.reduce_spt_size)
 
     resume_itr = 0
     model_file = None

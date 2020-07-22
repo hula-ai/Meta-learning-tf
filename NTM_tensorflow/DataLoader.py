@@ -22,7 +22,6 @@ class OmniglotDataLoader:
         self.test_data = self.data[-args.n_test_classes:]
 
     def noisify_labels(self, labels, n_classes, noise_size=0.3, noise_strategy="random"):
-        labels = np.array(labels)
         update_sample_size = int(len(labels) / n_classes) - 1
         assert update_sample_size * (1 - noise_size) >= 1, \
             "More than 1 sample per class remains unpolluted is required."
@@ -48,6 +47,21 @@ class OmniglotDataLoader:
             labels[map_noise_ids] = noise
         return labels
 
+    def shift_seq(self, seq, n_classes, shift_size=0.3, noise_strategy="random"):
+        update_sample_size = int(len(seq) / n_classes) - 1
+        assert update_sample_size * (1 - shift_size) >= 1, \
+            "More than 1 sample per class remains unpolluted is required."
+        total_update_samples = update_sample_size * n_classes
+        num_noise_samples = int(total_update_samples * shift_size)
+        num_clean_samples = total_update_samples - num_noise_samples
+        clean_ids = np.arange(n_classes) * update_sample_size + np.random.randint(0, update_sample_size, n_classes)
+        exclude = np.delete(np.arange(total_update_samples), clean_ids)
+        more_ids = np.random.choice(exclude, num_clean_samples - n_classes, replace=False)
+        clean_ids = np.concatenate([clean_ids, more_ids])
+        noise_ids = np.delete(np.arange(total_update_samples), clean_ids)
+        map_noise_ids = noise_ids // update_sample_size + noise_ids
+        return map_noise_ids
+
     def fetch_batch(self, args, mode='train', sample_strategy='random', augment=True):
         n_classes, batch_size, seq_length = args.n_classes, args.batch_size, args.seq_length
         if mode == 'train':
@@ -65,21 +79,38 @@ class OmniglotDataLoader:
                 for i in range(batch_size):
                     noise_seq[i] = self.noisify_labels(seq[i], n_classes, noise_size=args.noise_size,
                                                        noise_strategy=args.noise_strategy)
+            if mode == "test" and args.reduce_spt_size != 0:
+                remove_id = []
+                for i in range(batch_size):
+                    remove_id.append(self.shift_seq(seq[i], n_classes, shift_size=args.reduce_spt_size))
+
             for i in range(batch_size):
                 if mode == "test":
                     seq_i = seq[i, :]
-                    noise_seq_i = noise_seq[i, :]
                     seq_length = len(seq_i)
                     qry_ids = np.arange(1, n_classes+1) * int(seq_length / n_classes) - 1
-                    spt_ids = np.delete(np.arange(seq_length), qry_ids)
                     qry_perm = np.random.permutation(np.arange(len(qry_ids)))
-                    spt_perm = np.random.permutation(np.arange(len(spt_ids)))
-                    seq[i, :] = np.concatenate([seq_i[spt_ids][spt_perm], seq_i[qry_ids][qry_perm]])
-                    noise_seq[i, :] = np.concatenate([noise_seq_i[spt_ids][spt_perm], noise_seq_i[qry_ids][qry_perm]])
+                    if args.reduce_spt_size != 0:
+                        rm_ids = remove_id[i]
+                        spt_ids = np.delete(np.arange(seq_length), np.concatenate([qry_ids, rm_ids]))
+                        spt_perm = np.random.permutation(np.arange(len(spt_ids)))
+                        seq[i, :] = np.concatenate([seq_i[spt_ids][spt_perm], seq_i[qry_ids][qry_perm], seq_i[rm_ids]])
+                    else:
+                        spt_ids = np.delete(np.arange(seq_length), qry_ids)
+                        spt_perm = np.random.permutation(np.arange(len(spt_ids)))
+                        seq[i, :] = np.concatenate([seq_i[spt_ids][spt_perm], seq_i[qry_ids][qry_perm]])
+                    if args.noise_size != 0:
+                        noise_seq_i = noise_seq[i, :]
+                        noise_seq[i, :] = np.concatenate([noise_seq_i[spt_ids][spt_perm], noise_seq_i[qry_ids][qry_perm]])
 
                 else:
                     np.random.shuffle(seq[i, :])
 
+
+            # spt_length = int((seq_length - n_classes) * (1 - args.reduce_spt_size))
+            # remain_ids = np.delete(np.arange(seq_length), np.arange(spt_length, seq_length - n_classes))
+            # seq = seq[:, remain_ids]
+            # args.seq_length = seq_length = spt_length + n_classes
         sample_ids = np.zeros_like(seq)
         for i in range(batch_size):
             for j in range(n_classes):

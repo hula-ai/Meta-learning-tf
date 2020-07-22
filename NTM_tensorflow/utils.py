@@ -86,7 +86,11 @@ def compute_accuracy(args, y, output, mode="freq_instance"):
         for i in range(np.shape(y)[0]):
             y_i = y_decode[i]
             output_i = output_decode[i]
-            accs.append(np.sum(y_i[-num_classes:] == output_i[-num_classes:]) / num_classes)
+            if args.mode == "test" and args.reduce_spt_size != 0:
+                shift = int((args.seq_length - num_classes) * args.reduce_spt_size)
+                accs.append(np.sum(y_i[-num_classes-shift:-shift] == output_i[-num_classes-shift:-shift]) / num_classes)
+            else:
+                accs.append(np.sum(y_i[-num_classes:] == output_i[-num_classes:]) / num_classes)
     return accs
 
 

@@ -12,6 +12,8 @@ def main():
     folder_str = "5way2shot"
     if args.noise_size != 0:
         folder_str += "_{:s}{:.2f}".format(args.noise_strategy, args.noise_size)
+    if args.reduce_spt_size != 0:
+        folder_str += "_reduce{:.2f}".format(args.reduce_spt_size)
     # folder_str = args.label_type
     save_folder = args.save_dir + '/' + args.model + '_' + folder_str
     summary_folder = args.tensorboard_dir + args.model + '_' + folder_str

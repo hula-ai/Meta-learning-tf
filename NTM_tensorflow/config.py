@@ -34,5 +34,6 @@ parser.add_argument('--disp_freq', default=100, help='display and save the train
 parser.add_argument('--test_freq', default=1000, help='run and display the test results after this many episodes')
 parser.add_argument('--tensorboard_dir', default='./summary/')
 parser.add_argument('--noise_strategy', default='random', help='random, or uniform')
-parser.add_argument('--noise_size', default=0.5, help='portion of support samples to be noisy')
+parser.add_argument('--noise_size', default=0, help='portion of support samples to be noisy')
+parser.add_argument('--reduce_spt_size', default=0.5, help='portion of reduced size of the support set')
 args = parser.parse_args()
