@@ -4,8 +4,8 @@ Neural Turing Machine implementation in tensorflow
 
 ## Prerequisites
 
-* Python 2.7
-* TensorFlow 1.2.0
+* Python 3.6
+* TensorFlow 1.10.0
 * NumPy
 * Pillow (For MANN, prepoccessing of Omniglot dataset)
 
